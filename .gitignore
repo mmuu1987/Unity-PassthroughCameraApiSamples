@@ -5,11 +5,16 @@ Logs/
 obj/
 Build/
 .vs/
+MirrorTest/
+Test_Server_Apk/
+PCServer/
 .vsconfig
 *.csproj
 *.sln
 /.utmp
 *.zip
+*.rar
+*.apk
 RuntimeActionBindings.json
 RuntimeActionBindings.json.meta
 ProjectSettings\Packages\com.unity.testtools.codecoverage\Settings.json

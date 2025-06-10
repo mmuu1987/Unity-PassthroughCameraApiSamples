@@ -5,25 +5,47 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/PassthroughCameraApiSamples/StartScene/StartScene.unity
     guid: 69e1b31c45bac42f88f75017ee404de1
-  - enabled: 1
+  - enabled: 0
     path: Assets/PassthroughCameraApiSamples/CameraViewer/CameraViewer.unity
     guid: ad5bb12b10679b840999aa322aa7a491
-  - enabled: 1
+  - enabled: 0
     path: Assets/PassthroughCameraApiSamples/CameraToWorld/CameraToWorld.unity
     guid: 756785b371a4f49438b7e2148816e892
-  - enabled: 1
+  - enabled: 0
     path: Assets/PassthroughCameraApiSamples/BrightnessEstimation/BrightnessEstimation.unity
     guid: 8ea13e682474e1748965f8e21972f2b2
-  - enabled: 1
+  - enabled: 0
     path: Assets/PassthroughCameraApiSamples/MultiObjectDetection/MultiObjectDetection.unity
     guid: 20c230cce46443841b5727b1d6100bfc
-  - enabled: 1
+  - enabled: 0
     path: Assets/PassthroughCameraApiSamples/ShaderSample/ShaderSample.unity
     guid: 708e8dca6055146b28afe2481f141457
+  - enabled: 0
+    path: Assets/PassthroughCameraApiSamples/3 QRCodeTracking/QRCodeTracking.unity
+    guid: 987cb8b6148ad48e2882cf1a7a847068
+  - enabled: 0
+    path: Assets/ArUcoMarkerTracking.unity
+    guid: 9624484179379284d9eca0a38798a410
+  - enabled: 0
+    path: Assets/ChArUcoMarkerTracking.unity
+    guid: 721502b2ea7c94c439808f42a2c2ee5e
+  - enabled: 1
+    path: Assets/ART/WZS/Scene/OpenCVAnchor.unity
+    guid: 8a311ce5d446bd94b881261c7b6e5448
+  - enabled: 0
+    path: Assets/_ImageTracking/DynamicImageTracking.unity
+    guid: b5cd2a7d943f37847a2027b55fcf9a98
+  - enabled: 0
+    path: Assets/_ImageTracking/StaticImageTracking.unity
+    guid: 5164fdf852ca9a243b290bbddfb656b2
+  - enabled: 0
+    path: Assets/Mirror/Examples/RigidbodyPhysics/Scenes/MirrorBounceScene.unity
+    guid: b42449e4a64f03a42b999b0c118df11b
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: f2bf97b3acdb64248a707c407c9fc54e, type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 8aed60cd748eec0418812df1e10a91cf, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: a971eac5e950046e586c5e153e32d05c, type: 2}
-    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 9d6cad077b11c47aa8de68032ce78bdd, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: bd9c9ebb4def8d74aae7c2326c5a96ec, type: 2}
