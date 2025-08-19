@@ -64,6 +64,9 @@ namespace FireCubeBase
 
         public AudioSource Audiosource { get; private set; }
 
+        /// <summary>
+        /// 这个变量将会慢慢遗弃掉
+        /// </summary>
         public Transform MyWorldCenterPoint { get; internal set; }
 
         /// <summary>
@@ -111,6 +114,15 @@ namespace FireCubeBase
         /// 
         /// </summary>
         private bool _isActive = false;
+
+        private Transform trackingSpace;
+
+
+        /// <summary>
+        /// 跟踪成功后面的持续时间
+        /// </summary>
+        public float TrackingTime { get; private set; }
+
         /// <summary>
         /// 虚拟世界的根物体，跟中心点的偏移量
         /// </summary>
@@ -127,15 +139,8 @@ namespace FireCubeBase
         private void Awake()
         {
             OnAwake();
-
-           
-
-          
-
-            
         }
 
-      
 
         public void ResetAudioInfo()
         {
@@ -153,9 +158,10 @@ namespace FireCubeBase
         {
 
 
+
             if (OpenCVMarkManager.Instance != null)
             {
-                OpenCVMarkManager.Instance.OpenCvAnchor.TrackSuccessEvent += Instance_OpenCVTrackCompleted;
+                OpenCVMarkManager.Instance.OpenCvAnchor.TrackSuccessEvent += LocalSpace_OpenCVTrackCompleted;
             }
             else
             {
@@ -166,6 +172,8 @@ namespace FireCubeBase
             if (AnchorManager.Instance != null)
             {
                 AnchorManager.Instance.LoadWorldPointCompleted += Instance_LoadWorldPointCompleted;
+
+                AnchorManager.Instance.AnchorUpdateEvent += Local_AnchorUpdateEvent;
             }
             else
             {
@@ -190,11 +198,33 @@ namespace FireCubeBase
             }
         }
 
-       
+        private void TrackingSpace_AnchorUpdateEvent(Transform anchor)
+        {
+           // targetPos = GetPos(anchor);
+
+           Vector3 dir = anchor.position - SceneRootTransform.position;
+
+           trackingSpace.position = PlayerPos + dir;
+           LocalScene.transform.position = dir;
+
+        }
+
+        private void Local_AnchorUpdateEvent(Transform anchor)
+        {
+            SceneRootTransform.position = anchor.position;
+            SceneRootTransform.rotation = anchor.rotation;
+
+            SetLocaScenelPos(false);
+
+        }
+
         void OnDisable()
         {
             if (AnchorManager.Instance != null)
+            {
                 AnchorManager.Instance.LoadWorldPointCompleted -= Instance_LoadWorldPointCompleted;
+                AnchorManager.Instance.AnchorUpdateEvent -= Local_AnchorUpdateEvent;
+            }
 
             if (MyARcoreManager.Instance != null)
             {
@@ -203,7 +233,7 @@ namespace FireCubeBase
 
             if (OpenCVMarkManager.Instance != null)
             {
-                OpenCVMarkManager.Instance.OpenCvAnchor.TrackSuccessEvent -= Instance_OpenCVTrackCompleted;
+                OpenCVMarkManager.Instance.OpenCvAnchor.TrackSuccessEvent -= LocalSpace_OpenCVTrackCompleted;
             }
 
         }
@@ -211,7 +241,7 @@ namespace FireCubeBase
         void Start()
         {
 
-          
+
 
             if (!IsAndroidPad)
             {
@@ -229,7 +259,6 @@ namespace FireCubeBase
                 if (OVRInput.GetDown(OVRInput.RawButton.A))
                 {
                     _isPressA = true;
-                   
                 }
                 else if (OVRInput.GetUp(OVRInput.RawButton.A))
                 {
@@ -294,22 +323,16 @@ namespace FireCubeBase
                     BaseNetManager.FireCubeNetClient.ClientSceneNet.localBaseObject.transform.position = MyWorldCenterPoint.position + WorldOffest;
                 }
             }
-            else 
-
+            else
             {
-
                 if (OVRInput.GetDown(OVRInput.RawButton.A))
                 {
-                    //重置旋转，如果本来有旋转的话
-                    ovrCamRig.GetComponent<OVRCameraRig>().trackingSpace.rotation = Quaternion.identity;
-                    //重置位置，如果位置不为0的话
-                    ovrCamRig.GetComponent<OVRCameraRig>().trackingSpace.position = Vector3.zero;
-
+                    AnchorManager.Instance.HideAllAnchor();
                     LocalScene.SetActive(false);
                     OpenCVMarkManager.Instance.Reset();
+                    bool is6X6 = OpenCVMarkManager.Instance.m_arucoMarkerTracking.ISTracking6X6;
+                    OpenCVMarkManager.Instance.m_arucoMarkerTracking.ISTracking6X6 = !is6X6;
                 }
-
-               
             }
 
 
@@ -365,6 +388,12 @@ namespace FireCubeBase
                 //    currentInputSubsystem.TryRecenter();
                 //}
             }
+
+            if (SceneRootTransform != null)
+            {
+                TrackingTime += Time.deltaTime;
+            }
+           
         }
 
 
@@ -490,10 +519,10 @@ namespace FireCubeBase
 
 
         /// <summary>
-        /// 中心点加载完成的事件
+        /// 中心点加载完成的事件，改变的是TrackingSpace
         /// </summary>
         /// <param name="isQuest">是否是quest3给的世界中心点,true为quest3给的，false为第三方摄像头给的中心点</param>
-        public void Instance_OpenCVTrackCompleted(Transform anchor,bool isAndroid)
+        public void TrackingSpace_OpenCVTrackCompleted(Transform anchor, bool isAndroid)
         {
 
             Debug.Log($"OpenCV锚点完成");
@@ -556,13 +585,91 @@ namespace FireCubeBase
 
             SceneRootTransform.rotation = Quaternion.Euler(0f, angleVector3.y, 0f);
 
+            MoveRotationPlayer(SceneRootTransform);
+
+            SetLocaScenelPos(false, true);
+
+         
+
+            PlayerPos = trackingSpace.position;
+
+            AnchorManager.Instance.CreatAnchorLocaltion(SceneRootTransform.gameObject, false);
+
            
+            
 
-            MoveRotationPlayer();
 
-            SetLocaScenelPos(false,true);
+            ConnectServer();
+        }
 
-            AnchorManager.Instance.CreatAnchorLocaltion(SceneRootTransform.gameObject,false);
+        /// <summary>
+        /// 中心点加载完成的事件，改变的是自身坐标
+        /// </summary>
+        /// <param name="isQuest">是否是quest3给的世界中心点,true为quest3给的，false为第三方摄像头给的中心点</param>
+        public void LocalSpace_OpenCVTrackCompleted(Transform anchor, bool isAndroid)
+        {
+
+            Debug.Log($"OpenCV锚点完成");
+
+
+            MyWorldCenterPoint = anchor;
+
+            if (SceneRootTransform == null)
+            {
+                GameObject go = new GameObject();
+                go.name = "SceneRootTransform";
+                SceneRootTransform = go.transform;
+            }
+            WorldOffest = Vector3.zero;
+
+
+            if (isAndroid)
+            {
+                //获取的坐标需要转换一下
+
+                //拿场景内的围墙和场景内的中心点做参考，中心点的X轴跟围墙垂直，并且中心点在工具架子和围墙的里面
+                //由此得出下面的转换  
+
+                Vector3 up = MyWorldCenterPoint.forward;//规定 中心点的forward轴是在虚拟世界up轴
+
+                Vector3 forward = -MyWorldCenterPoint.right;//规定 中心点的right轴为虚拟世界的forward轴
+
+                Quaternion q = Quaternion.LookRotation(forward, up);
+
+                string vector3Str = PlayerPrefs.GetString("Offest");
+
+                if (!string.IsNullOrEmpty(vector3Str))
+                {
+                    Vector3 temp = JsonUtility.FromJson<Vector3>(vector3Str);
+
+                    WorldOffest = temp;
+
+                    Debug.Log($"从本地获取偏移值：{WorldOffest}");
+                }
+
+                RootQuaternion = q;
+
+
+                SceneRootTransform.transform.rotation = q;
+
+                SceneRootTransform.transform.position = MyWorldCenterPoint.position + WorldOffest;
+            }
+            else
+            {
+                SceneRootTransform.transform.rotation = MyWorldCenterPoint.rotation;
+                SceneRootTransform.transform.position = MyWorldCenterPoint.position;
+            }
+
+            TrackingTime = 0f;
+
+            //识别后forwar和right轴组成的面不在水平面上，需要校正一下
+            var angleVector3 = SceneRootTransform.rotation.eulerAngles;
+
+            SceneRootTransform.rotation = Quaternion.Euler(0f, angleVector3.y-90f, 0f);//使朝向向前方
+
+            SetLocaScenelPos(false, false);
+
+            AnchorManager.Instance.CreatAnchorLocaltion(SceneRootTransform.gameObject, false);
 
             ConnectServer();
         }
@@ -636,7 +743,7 @@ namespace FireCubeBase
         /// </summary>
         /// <param name="isHide">是否隐藏,false为现实，true为隐藏</param>
         /// <param name="isOpenCV">是否使用opencv识别</param>
-        public void SetLocaScenelPos(bool isHide,bool isOpenCV=false)
+        public void SetLocaScenelPos(bool isHide, bool isOpenCV = false)
         {
             if (!isHide)
             {
@@ -648,7 +755,7 @@ namespace FireCubeBase
                         LocalScene.transform.position = SceneRootTransform.position;
                         LocalScene.transform.rotation = SceneRootTransform.rotation;
                     }
-                  
+
                 }
             }
             else
@@ -664,17 +771,18 @@ namespace FireCubeBase
         /// <summary>
         /// 移动并旋转角色，使其适应unity的世界位置
         /// </summary>
-        private void MoveRotationPlayer()
+        private void MoveRotationPlayer(Transform anchorTransform)
         {
-            if (SceneRootTransform == null) return;
+            if (anchorTransform == null) return;
 
             Debug.Log($"对齐眼镜到世界");
 
-            Vector3 pos = SceneRootTransform.position;
+            Vector3 pos = anchorTransform.position;
 
-            float angle = SceneRootTransform.eulerAngles.y;
+            float angle = anchorTransform.eulerAngles.y;
 
-            Transform trackingSpace = ovrCamRig.GetComponent<OVRCameraRig>().trackingSpace;
+            if (trackingSpace == null)
+                trackingSpace = ovrCamRig.GetComponent<OVRCameraRig>().trackingSpace;
 
             //重置旋转，如果本来有旋转的话
             trackingSpace.rotation = Quaternion.identity;
@@ -690,16 +798,77 @@ namespace FireCubeBase
             trackingSpace.rotation = Quaternion.Euler(0f, -angle + 90f, 0f);//加90的原因是对齐Z轴
 
 
-            //旋转完父物体后，dir也要跟着旋转，因为子物体centerEyeAnchor也会跟着旋转
+            //旋转完父物体后，dir也要跟着旋转，因为子物体centerEyeAnchor也会跟着旋转  
             dir = trackingSpace.rotation * dir;
 
             // Debug.Log($"{trackingSpace.name} 的pos:{trackingSpace.position}  头部的pos：{headTransform.position}  二维码的位置：{pos}");
 
             //new Vector3(-headTransform.position.x,0f,-headTransform.position.z)是让子物centerEyeAnchor的世界坐标在000位置
-            trackingSpace.position = new Vector3(-headTransform.position.x,0f,-headTransform.position.z) +dir;
+            trackingSpace.position = new Vector3(-headTransform.position.x, 0f, -headTransform.position.z) + dir;
+
+            targetPos = trackingSpace.position;
 
             Debug.Log($"{trackingSpace.name} 跟踪点的pos:{trackingSpace.position}  旋转：{trackingSpace.eulerAngles}  头部的位置：{headTransform.position} 偏移量：{dir}");
         }
+
+        private GameObject trackingSpaceCopy;
+
+        private GameObject headTransformCopy;
+
+        private Vector3 targetPos;
+
+        private Vector3 PlayerPos;
+        private Vector3 GetPos(Transform anchorTransform)
+        {
+            if (anchorTransform == null) return Vector3.zero;
+
+            Vector3 pos = anchorTransform.position;
+
+            float angle = anchorTransform.eulerAngles.y;
+
+         
+
+            if (trackingSpace == null)
+                trackingSpace = ovrCamRig.GetComponent<OVRCameraRig>().trackingSpace;
+
+            if (trackingSpaceCopy == null)
+                trackingSpaceCopy = new GameObject("trackingSpaceCopy");
+
+            trackingSpaceCopy.transform.parent = trackingSpace.parent;
+            trackingSpaceCopy.transform.position = trackingSpace.position;
+            trackingSpaceCopy.transform.rotation = trackingSpace.rotation;
+
+
+            Transform headTransform = ovrCamRig.GetComponent<OVRCameraRig>().centerEyeAnchor;
+
+            if (headTransformCopy == null)
+                headTransformCopy = new GameObject("headTransformCopy");
+
+            headTransformCopy.transform.parent = trackingSpaceCopy.transform;
+            headTransformCopy.transform.position = headTransform.position;
+            headTransformCopy.transform.rotation = HeadTransform.rotation;
+
+            trackingSpaceCopy.transform.rotation = Quaternion.identity;
+            trackingSpaceCopy.transform.position = Vector3.zero;
+
+
+
+            var dir = new Vector3(headTransformCopy.transform.position.x, pos.y, headTransformCopy.transform.position.z) - pos;
+
+
+            trackingSpaceCopy.transform.rotation = Quaternion.Euler(0f, -angle + 90f, 0f);//加90的原因是对齐Z轴
+
+
+            //旋转完父物体后，dir也要跟着旋转，因为子物体centerEyeAnchor也会跟着旋转  
+            dir = trackingSpaceCopy.transform.rotation * dir;
+
+            trackingSpaceCopy.transform.position = new Vector3(-headTransformCopy.transform.position.x, 0f, -headTransformCopy.transform.position.z) + dir ;
+
+            return trackingSpaceCopy.transform.position;
+
+
+        }
+
         /// <summary>
         /// 本地远程暴力关闭服务器
         /// 并在2秒后开始重连服务器

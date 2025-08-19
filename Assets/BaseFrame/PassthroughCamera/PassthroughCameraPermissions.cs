@@ -3,6 +3,7 @@ using System.Linq;
 using Meta.XR.Samples;
 using UnityEngine;
 #if UNITY_ANDROID
+using System.Collections;
 using UnityEngine.Android;
 using PCD = FireCubeBase.PassthroughCameraDebugger;
 
@@ -24,6 +25,26 @@ namespace FireCubeBase
         private static bool s_askedOnce;
 
 #if UNITY_ANDROID
+
+        public IEnumerator CheckPermissions()
+        {
+            while (true)
+            {
+                yield return new WaitForSeconds(5f);
+
+                if (!IsAllCameraPermissionsGranted())
+                {
+                    s_askedOnce = false;
+                    AskCameraPermissions();
+                }
+                else
+                {
+                    Debug.Log($"所有权限已经获取完毕");
+                    yield break;
+                }
+            }
+        }
+
         /// <summary>
         /// Request camera permission if the permission is not authorized by the user.
         /// </summary>
@@ -51,6 +72,9 @@ namespace FireCubeBase
                 // It's important to request all necessary permissions in one request because only one 'PermissionCallbacks' instance is supported at a time.
                 var allPermissions = CameraPermissions.Concat(PermissionRequestsOnStartup).ToArray();
                 Permission.RequestUserPermissions(allPermissions, callbacks);
+
+                //重新检测是否获取完权限
+                _ = StartCoroutine(CheckPermissions());
             }
         }
 

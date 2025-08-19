@@ -30,9 +30,12 @@ namespace FireCubeBase
                 $"PCA: Passthrough Camera: more than one {nameof(WebCamTextureManager)} component. Only one instance is allowed at a time. Current instance: {name}");
 #if UNITY_ANDROID
             CameraPermissions.AskCameraPermissions();
+
+           
 #endif
         }
 
+       
         private void OnEnable()
         {
             PCD.DebugMessage(LogType.Log, $"PCA: {nameof(OnEnable)}() was called");

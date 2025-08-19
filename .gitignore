@@ -21,3 +21,6 @@ ProjectSettings\Packages\com.unity.testtools.codecoverage\Settings.json
 PerformanceTestRun*.*
 StreamingAssets*
 !NativeSamples.zip
+Assets/OpenCVForUnity/Extra.unitypackage
+apk/OpenCVAnchor_BurstDebugInformation_DoNotShip/tempburstlibs/arm64-v8a/lib_burst_generated.txt
+Assets/OpenCVForUnity/Extra.unitypackage.meta

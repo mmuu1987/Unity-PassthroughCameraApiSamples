@@ -39,7 +39,7 @@ namespace FireCubeBase
         [SerializeField] private float m_canvasDistance = 1f;
 
         [Header("Marker Tracking")]
-        [SerializeField] private ArUcoMarkerTracking m_arucoMarkerTracking;
+        [SerializeField] public ArUcoMarkerTracking m_arucoMarkerTracking;
         [SerializeField, Tooltip("List of marker IDs mapped to their corresponding GameObjects")]
         private List<MarkerGameObjectPair> m_markerGameObjectPairs = new List<MarkerGameObjectPair>();
         private Dictionary<int, GameObject> m_markerGameObjectDictionary = new Dictionary<int, GameObject>();
@@ -59,13 +59,12 @@ namespace FireCubeBase
 
             Instance = this;
 
-            OpenCvAnchor = m_arucoMarkerTracking.OpenCVAnchor.GetComponent<OpenCVAnchor>();
+            OpenCvAnchor = m_arucoMarkerTracking.OpenCVAnchor;
 
             OpenCvAnchor.TrackSuccessEvent += CvAnchor_TrackSuccessEvent;
 
-            if(Application.platform == RuntimePlatform.Android)
-             OpenCvAnchor.gameObject.SetActive(false);
-            else OpenCvAnchor.gameObject.SetActive(true);
+            if(Application.platform != RuntimePlatform.Android)
+             OpenCvAnchor.gameObject.SetActive(true);
 
         }
         /// <summary>

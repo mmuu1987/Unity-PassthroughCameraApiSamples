@@ -32,7 +32,7 @@ namespace FireCubeBase
         /// Coefficient for low-pass filter (0-1). Higher values mean more smoothing.
         /// </summary>
         [Range(0, 1)]
-        [SerializeField] private float _poseFilterCoefficient = 0.5f;
+        [SerializeField] private float _poseFilterCoefficient = 0.8f;
 
         /// <summary>
         /// Division factor for input image resolution. Higher values improve performance but reduce detection accuracy.
@@ -44,6 +44,8 @@ namespace FireCubeBase
         /// ×·×ÙÊ¶±ðµÄID
         /// </summary>
         public int TrackingID;
+
+        public bool ISTracking6X6;
 
         /// <summary>
         /// Read-only access to the divide number value
@@ -83,6 +85,7 @@ namespace FireCubeBase
         private Dictionary markerDictionary;
         private Mat recoveredMarkerIndices;
         private ArucoDetector arucoDetector;
+        private ArucoDetector ArucoDetector6x6;
 
         private bool _isReady = false;
 
@@ -91,7 +94,7 @@ namespace FireCubeBase
         /// </summary>
         public bool IsReady => _isReady;
 
-        public GameObject OpenCVAnchor;
+        public OpenCVAnchor OpenCVAnchor;
         /// <summary>
         /// Dictionary storing previous pose data for each marker ID for smoothing
         /// </summary>
@@ -173,7 +176,7 @@ namespace FireCubeBase
 
             // Create the ArUco detector
             arucoDetector = new ArucoDetector(markerDictionary, detectorParams, refineParameters);
-
+            ArucoDetector6x6 = new ArucoDetector(Objdetect.getPredefinedDictionary((int)ArUcoDictionary.DICT_6X6_50), detectorParams, refineParameters);
             _isReady = true;
         }
 
@@ -195,6 +198,11 @@ namespace FireCubeBase
 
             if (arucoDetector != null)
                 arucoDetector.Dispose();
+
+            if (arucoDetector != null)
+            {
+                ArucoDetector6x6.Dispose();
+            }
 
             if (_detectedMarkerIds != null)
                 _detectedMarkerIds.Dispose();
@@ -262,8 +270,17 @@ namespace FireCubeBase
                 _detectedMarkerCorners.Clear();
                 _rejectedMarkerCandidates.Clear();
 
-                // Detect markers
-                arucoDetector.detectMarkers(_processingRgbMat, _detectedMarkerCorners, _detectedMarkerIds, _rejectedMarkerCandidates);
+                if (ISTracking6X6)
+                {
+                    // Detect markers
+                    ArucoDetector6x6.detectMarkers(_processingRgbMat, _detectedMarkerCorners, _detectedMarkerIds, _rejectedMarkerCandidates);
+                }
+                else
+                {
+                    // Detect markers
+                    arucoDetector.detectMarkers(_processingRgbMat, _detectedMarkerCorners, _detectedMarkerIds, _rejectedMarkerCandidates);
+                }
+               
 
                 // Draw detected markers for visualization
                 if (_detectedMarkerCorners.Count == _detectedMarkerIds.total() || _detectedMarkerIds.total() == 0)
@@ -291,6 +308,12 @@ namespace FireCubeBase
             // Skip if not ready or no markers detected
             if (!_isReady || _detectedMarkerCorners == null || _detectedMarkerCorners.Count == 0)
             {
+                if (OpenCVAnchor.gameObject.activeInHierarchy)
+                {
+                    OpenCVAnchor.CheckTracking(false);
+                   
+                }
+
                 return;
             }
 
@@ -334,7 +357,10 @@ namespace FireCubeBase
                             translationVec.get(0, 0, tvecArr);
                             PoseData poseData = ARUtils.ConvertRvecTvecToPoseData(rvecArr, tvecArr);
 
-                            if(!OpenCVAnchor.activeInHierarchy)OpenCVAnchor.SetActive(true);
+                            if (!OpenCVAnchor.gameObject.activeInHierarchy)
+                            {
+                                OpenCVAnchor.CheckTracking(true);
+                            }
 
                             if (prePoseData.pos != Vector3.zero)
                             {
@@ -360,10 +386,11 @@ namespace FireCubeBase
                 }
                 else
                 {
-                  
-                    OpenCVAnchor.SetActive(false);
+                    if (OpenCVAnchor.gameObject.activeInHierarchy)
+                    {
+                        OpenCVAnchor.CheckTracking(false);
+                    }
                 }
-                
             }
         }
 

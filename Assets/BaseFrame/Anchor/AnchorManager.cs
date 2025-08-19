@@ -40,6 +40,8 @@ namespace FireCubeBase
         /// </summary>
         public event Action<bool> LoadWorldPointCompleted;
 
+        public event Action<Transform> AnchorUpdateEvent; 
+
         [SerializeField]
         private Anchor _anchorPrefab;
 
@@ -57,7 +59,7 @@ namespace FireCubeBase
         /// <summary>
         /// 当前创建的锚点
         /// </summary>
-        private OVRSpatialAnchor _curOvrSpatialAnchor;
+        public OVRSpatialAnchor CurOvrSpatialAnchor { get; private set; }
 
         private float _timeTemp = 0f;
 
@@ -225,20 +227,27 @@ namespace FireCubeBase
                 }
             }
 
-            //if (_curOvrSpatialAnchor != null)
-            //{
-            //    if (_timeTemp >= 2f)
-            //    {
-            //        _timeTemp = 0f;
-            //        bool isLocalized = _curOvrSpatialAnchor.Localized;
-            //        Debug.Log($"查询更新锚点状态：{isLocalized}");
-            //    }
-            //    else
-            //    {
-            //        _timeTemp += Time.deltaTime;
-            //    }
+            if (CurOvrSpatialAnchor != null)
+            {
+                if (_timeTemp >= 0.1f)
+                {
+                    _timeTemp = 0f;
 
-            //}
+                    //bool isLocalized = _curOvrSpatialAnchor.Localized;
+
+                    //if (isLocalized)
+                    //{
+                    //    Debug.Log($"查询更新锚点状态：{isLocalized}");
+                    //}
+
+                    AnchorUpdateEvent?.Invoke(CurOvrSpatialAnchor.transform);
+                }
+                else
+                {
+                    _timeTemp += Time.deltaTime;
+                }
+
+            }
         }
         /// <summary>
         /// 创建定位锚点  
@@ -271,9 +280,9 @@ namespace FireCubeBase
 
             Anchor anchor = Instantiate(_anchorPrefab, _anchorHelp.transform.position, _anchorHelp.transform.rotation);
 
-            _curOvrSpatialAnchor = anchor.GetComponent<OVRSpatialAnchor>();
+            CurOvrSpatialAnchor = anchor.GetComponent<OVRSpatialAnchor>();
 
-            _curOvrSpatialAnchor.OnLocalize += OvrSpatialAnchor_OnLocalize;
+            CurOvrSpatialAnchor.OnLocalize += OvrSpatialAnchor_OnLocalize;
 
             if (!isLocaltion)
             {
@@ -329,6 +338,7 @@ namespace FireCubeBase
                 Destroy(anchor.gameObject);
             }
             AnchorList.Clear();
+            CurOvrSpatialAnchor = null;
         }
         /// <summary>
         /// 抹掉所有的锚点，抹掉后并删除场景中的所有锚点

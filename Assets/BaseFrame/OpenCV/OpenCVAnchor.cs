@@ -17,20 +17,32 @@ namespace FireCubeBase
         private float timeTemp = 0f;
 
 
-        private bool isTrackSuccess = false;
+        private bool _isTracking  = false;
 
         private void Update()
         {
 
 #if UNITY_ANDROID && !UNITY_EDITOR_WIN
 
-            if (!isTrackSuccess)
+
+            if (_isTracking && !gameObject.activeInHierarchy)
+            {
+                _isTracking = false;
+            }
+
+            if (!_isTracking && gameObject.activeInHierarchy)
+            {
+                _isTracking = true;
+            }
+
+
+            if (_isTracking)
             {
 
-                if (timeTemp >= 2f)
+                if (timeTemp >= 0.1f)
                 {
                     Debug.Log($"识别成功");
-                    isTrackSuccess = true;
+                    _isTracking = false;
                     TrackSuccessEvent?.Invoke(transform,true);
                     timeTemp = 0f;
                     this.gameObject.SetActive(false);//隐藏自身
@@ -41,11 +53,12 @@ namespace FireCubeBase
 
                 }
             }
+          
 #else
 
             Debug.Log($"Pc端的无需识别，直接传输原地000的变换");
          
-            isTrackSuccess = true;
+            _isTracking = false;
             TrackSuccessEvent?.Invoke(transform,false);
             timeTemp = 0f;
             this.gameObject.SetActive(false);
@@ -54,11 +67,17 @@ namespace FireCubeBase
 
         }
 
+        public void CheckTracking(bool isTracking)
+        {
+           
+            timeTemp = 0f;
+            this.gameObject.SetActive(isTracking);
+            _isTracking = isTracking;
+
+        }
         public void Reset()
         {
-            isTrackSuccess = false;
-            this.gameObject.SetActive(true);
-            this.transform.position = Vector3.zero;
+            timeTemp = 0f;
         }
         /// <summary>
         /// 识别后调用
@@ -76,5 +95,16 @@ namespace FireCubeBase
         {
             timeTemp = 0f;
         }
+
+
+#if UNITY_EDITOR_WIN
+        //private void OnGUI()
+        //{
+        //    if (GUI.Button(new Rect(0f, 200f, 100f, 100f), "anchor"))
+        //    {
+
+        //    }
+        //}
+#endif
     }
 }
